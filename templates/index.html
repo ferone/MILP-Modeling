@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MILP Solver</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#1a1a1a',
+                            card: '#2d2d2d',
+                            border: '#404040',
+                            text: '#e0e0e0',
+                            primary: '#3b82f6',
+                            secondary: '#4b5563',
+                            hover: '#3d3d3d'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .chat-container {
+            height: calc(100vh - 4rem);
+        }
+        .problem-list {
+            height: calc(100vh - 8rem);
+            overflow-y: auto;
+        }
+        .problem-item {
+            position: relative;
+        }
+        .delete-btn {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .problem-item:hover .delete-btn {
+            opacity: 1;
+        }
+        .message {
+            transition: all 0.3s ease;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .chat-history {
+            height: calc(100vh - 24rem);
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        /* Custom scrollbar for dark mode */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #404040;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+        .input-container {
+            background-color: #1a1a1a;
+            border-bottom: 1px solid #404040;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .message-content {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .user-message {
+            background-color: #2d2d2d;
+            margin-left: 2rem;
+        }
+        .assistant-message {
+            background-color: #1a1a1a;
+            margin-right: 2rem;
+            border: 1px solid #404040;
+        }
+        #problemInput {
+            min-height: 120px;
+            max-height: 300px;
+            transition: height 0.2s ease;
+            padding-right: 3rem;
+        }
+        .input-wrapper {
+            position: relative;
+        }
+        .send-button {
+            position: absolute;
+            bottom: 0.5rem;
+            right: 0.5rem;
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #3b82f6;
+            color: white;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .send-button:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .send-button:disabled {
+            background-color: #4b5563;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .message-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .user-avatar {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .assistant-avatar {
+            background-color: #4b5563;
+            color: white;
+        }
+        .message-text {
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        .solution-card {
+            background-color: #2d2d2d;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 0.5rem;
+        }
+        .solution-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .solution-title {
+            font-weight: 500;
+            color: #e0e0e0;
+        }
+        .solution-content {
+            font-size: 0.875rem;
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+<body class="bg-dark-bg text-dark-text">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4 text-center">MILP Problem Solver</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Main Content -->
+            <div class="md:col-span-3 space-y-4">
+                <!-- Main Chat Area -->
+                <div class="chat-container relative">
+                    <!-- Input Area -->
+                    <div class="input-container">
+                        <div class="max-w-3xl mx-auto">
+                            <div class="input-wrapper">
+                                <textarea id="problemInput" 
+                                    class="w-full p-4 bg-dark-card border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-primary text-dark-text resize-none"
+                                    rows="6"
+                                    placeholder="Enter your MILP problem or describe a constraint...">OBJECTIVE: maximize
+3*x1 + 2*x2 + 4*x3
+
+VARIABLES:
+x1, x2, x3
+
+CONSTRAINTS:
+2*x1 + 1*x2 + 3*x3 <= 10
+1*x1 + 2*x2 + 1*x3 <= 8
+3*x1 + 2*x2 + 2*x3 <= 12
+
+BOUNDS:
+x1 >= 0
+x2 >= 0
+x3 >= 0</textarea>
+                                <button id="solveBtn" class="send-button" title="Solve Problem">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Chat History -->
+                    <div id="chatMessages" class="chat-history space-y-4"></div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="bg-dark-card p-4 rounded-lg shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold">Saved Problems</h2>
+                    <button id="newChatBtn" 
+                        class="px-4 py-2 bg-dark-secondary text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-dark-secondary text-sm">
+                        New Problem
+                    </button>
+                </div>
+                <div id="problemList" class="problem-list space-y-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store problems in localStorage
+        let savedProblems = JSON.parse(localStorage.getItem('savedProblems') || '[]');
+        let currentMessageId = 0;
+
+        // Function to save a problem
+        function saveProblem(problem, solution) {
+            const problemData = {
+                id: Date.now(),
+                problem: problem,
+                solution: solution,
+                timestamp: new Date().toLocaleString()
+            };
+            savedProblems.unshift(problemData);
+            localStorage.setItem('savedProblems', JSON.stringify(savedProblems));
+            updateProblemList();
+        }
+
+        // Function to delete a problem
+        function deleteProblem(index) {
+            savedProblems.splice(index, 1);
+            localStorage.setItem('savedProblems', JSON.stringify(savedProblems));
+            updateProblemList();
+        }
+
+        // Function to update the problem list
+        function updateProblemList() {
+            const problemList = document.getElementById('problemList');
+            problemList.innerHTML = '';
+            
+            savedProblems.forEach((problem, index) => {
+                const problemDiv = document.createElement('div');
+                problemDiv.className = 'problem-item group flex justify-between items-start p-2 hover:bg-dark-hover rounded cursor-pointer';
+                
+                const textContainer = document.createElement('div');
+                textContainer.className = 'flex-1';
+                textContainer.innerHTML = `
+                    <div class="problem-text text-dark-text" onclick="loadProblem(${index})">${problem.problem.substring(0, 50)}${problem.problem.length > 50 ? '...' : ''}</div>
+                    <div class="text-xs text-dark-secondary">${problem.timestamp}</div>
+                `;
+
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete-btn ml-2 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity';
+                deleteButton.innerHTML = `
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                `;
+                deleteButton.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteProblem(index);
+                };
+
+                problemDiv.appendChild(textContainer);
+                problemDiv.appendChild(deleteButton);
+                problemList.appendChild(problemDiv);
+            });
+        }
+
+        // Function to load a problem
+        function loadProblem(index) {
+            const problem = savedProblems[index];
+            document.getElementById('problemInput').value = problem.problem;
+            document.getElementById('chatMessages').innerHTML = '';
+            currentMessageId = 0;
+            // Automatically solve the loaded problem
+            document.getElementById('solveBtn').click();
+        }
+
+        // Function to add a message to the chat
+        function addMessage(role, content, messageId = null) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role === 'user' ? 'user-message' : 'assistant-message'}`;
+            
+            if (messageId === null) {
+                messageId = currentMessageId++;
+            }
+            messageDiv.dataset.messageId = messageId;
+            
+            if (role === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="message-header">
+                        <div class="message-avatar user-avatar">U</div>
+                        <div class="message-text">Problem</div>
+                    </div>
+                    <div class="message-content">
+                        <pre class="whitespace-pre-wrap text-dark-text">${content}</pre>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="message-header">
+                        <div class="message-avatar assistant-avatar">A</div>
+                        <div class="message-text">Solution</div>
+                    </div>
+                    <div class="message-content">
+                        ${content}
+                    </div>
+                `;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Function to determine where to add the new constraint
+        function addConstraintToModel(currentModel, newConstraint) {
+            const sections = currentModel.split('\n\n');
+            let updatedModel = '';
+            
+            for (let i = 0; i < sections.length; i++) {
+                const section = sections[i];
+                if (section.startsWith('CONSTRAINTS:')) {
+                    // Keep the "CONSTRAINTS:" header
+                    let updatedSection = section.split('\n')[0] + '\n';
+                    
+                    // Add existing constraints (skip header)
+                    const lines = section.split('\n');
+                    for (let j = 1; j < lines.length; j++) {
+                        if (lines[j].trim()) {
+                            updatedSection += lines[j] + '\n';
+                        }
+                    }
+                    
+                    // Add the new constraint
+                    updatedSection += newConstraint;
+                    
+                    updatedModel += updatedSection + '\n\n';
+                } else if (section.startsWith('OBJECTIVE:')) {
+                    // Keep the objective section unchanged
+                    updatedModel += section + '\n\n';
+                } else {
+                    updatedModel += section + '\n\n';
+                }
+            }
+            
+            return updatedModel.trim();
+        }
+
+        // Function to interpret natural language to mathematical constraints
+        function interpretConstraint(text) {
+            // Remove common prefixes
+            const prefixes = [
+                'add a new constraint',
+                'add constraint',
+                'new constraint',
+                'add the constraint',
+                'the constraint is',
+                'constraint:',
+                'add:',
+                'please add'
+            ];
+            
+            let constraint = text.toLowerCase();
+            
+            // Remove any prefix from the text
+            for (const prefix of prefixes) {
+                if (constraint.startsWith(prefix)) {
+                    constraint = constraint.substring(prefix.length).trim();
+                }
+            }
+            
+            // If the remaining text looks like a mathematical formula (contains operators or variables)
+            if (/[+\-*\/=<>x\d]/.test(constraint)) {
+                // Common phrases and their mathematical equivalents
+                const phrases = {
+                    'greater than': '>=',
+                    'less than': '<=',
+                    'at least': '>=',
+                    'at most': '<=',
+                    'equal to': '=',
+                    'equals': '=',
+                    'maximum': '<=',
+                    'minimum': '>=',
+                    'plus': '+',
+                    'minus': '-',
+                    'times': '*',
+                    'multiplied by': '*',
+                    'divided by': '/'
+                };
+                
+                // Replace phrases with mathematical symbols
+                for (const [phrase, symbol] of Object.entries(phrases)) {
+                    constraint = constraint.replace(new RegExp(phrase, 'g'), symbol);
+                }
+                
+                // Handle "cannot exceed" or "should not exceed" cases
+                constraint = constraint.replace(/cannot exceed/g, '<=');
+                constraint = constraint.replace(/should not exceed/g, '<=');
+                constraint = constraint.replace(/must not exceed/g, '<=');
+                
+                // Handle "must be" cases
+                constraint = constraint.replace(/must be/g, '=');
+                
+                // Handle "sum of" cases
+                constraint = constraint.replace(/sum of/g, '');
+                
+                // Handle "and" as addition
+                constraint = constraint.replace(/ and /g, ' + ');
+                
+                // Clean up spaces around operators
+                constraint = constraint.replace(/\s*([+\-*\/=<>])\s*/g, ' $1 ');
+                
+                // Add missing variable markers
+                constraint = constraint.replace(/(\d+)([a-z])/g, '$1*$2');
+                
+                // Clean up any remaining multiple spaces
+                constraint = constraint.replace(/\s+/g, ' ').trim();
+                
+                // Ensure x1, x2, x3 format is used
+                constraint = constraint.replace(/x(\d)/g, 'x$1');
+            }
+            
+            return constraint;
+        }
+
+        // Function to handle follow-up input
+        function handleFollowUp(button) {
+            const followUpInput = button.parentElement.querySelector('.follow-up-input');
+            const userInput = followUpInput.value.trim();
+            
+            if (!userInput) return;
+            
+            // Add the original user input to the chat as a user message
+            addMessage('user', userInput);
+            
+            // Interpret the constraint
+            const interpretedConstraint = interpretConstraint(userInput);
+            
+            // Get the current problem text
+            const currentProblem = document.getElementById('problemInput').value;
+            
+            // Add the interpreted constraint to the appropriate section
+            const newProblem = addConstraintToModel(currentProblem, interpretedConstraint);
+            
+            // Add an explanation message
+            addMessage('assistant', `
+                <div class="space-y-2">
+                    <div class="font-medium text-dark-text">I've interpreted your input as:</div>
+                    <div class="p-2 bg-dark-hover rounded-lg">
+                        <pre class="whitespace-pre-wrap text-dark-text">${interpretedConstraint}</pre>
+                    </div>
+                    <div class="font-medium text-dark-text mt-4">Solving the updated model...</div>
+                </div>
+            `);
+            
+            // Update the main input
+            document.getElementById('problemInput').value = newProblem;
+            
+            // Disable the follow-up input and button
+            followUpInput.disabled = true;
+            button.disabled = true;
+            
+            // Solve the updated problem
+            document.getElementById('solveBtn').click();
+        }
+
+        // Function to format solution for display
+        function formatSolution(solution) {
+            return `
+                <div class="space-y-4">
+                    <div class="solution-card">
+                        <div class="solution-header">
+                            <div class="solution-title">Status</div>
+                            <div class="px-2 py-1 rounded-full text-sm ${solution.is_optimal ? 'bg-green-900 text-green-100' : 'bg-red-900 text-red-100'}">
+                                ${solution.is_optimal ? 'Optimal' : 
+                                  solution.is_infeasible ? 'Infeasible' : 
+                                  solution.is_unbounded ? 'Unbounded' : 'Unknown'}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="solution-card">
+                        <div class="solution-header">
+                            <div class="solution-title">Objective Value</div>
+                        </div>
+                        <div class="solution-content">${solution.objective_value.toFixed(4)}</div>
+                    </div>
+                    <div class="solution-card">
+                        <div class="solution-header">
+                            <div class="solution-title">Solution Time</div>
+                        </div>
+                        <div class="solution-content">${solution.solution_time.toFixed(3)} seconds</div>
+                    </div>
+                    <div class="solution-card">
+                        <div class="solution-header">
+                            <div class="solution-title">Variable Values</div>
+                        </div>
+                        <div class="solution-content">
+                            <pre class="whitespace-pre-wrap">${Object.entries(solution.variables)
+                                .map(([name, value]) => `${name} = ${value.toFixed(4)}`)
+                                .join('\n')}</pre>
+                        </div>
+                    </div>
+                    <div class="solution-card">
+                        <div class="solution-header">
+                            <div class="solution-title">Analysis</div>
+                        </div>
+                        <div class="solution-content">
+                            ${solution.is_optimal ? '✓ An optimal solution has been found that satisfies all constraints.' :
+                              solution.is_infeasible ? '✗ The problem has no feasible solution that satisfies all constraints.' :
+                              solution.is_unbounded ? '✗ The problem is unbounded - the objective value can grow infinitely.' :
+                              '? The solution status is unknown.'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Function to validate mathematical expressions
+        function validateExpression(expr) {
+            // Check for multiplication of variables (non-linear terms)
+            if (expr.match(/x\d+\s*\*\s*x\d+/)) {
+                throw new Error('Non-linear terms detected. Only linear expressions are allowed.');
+            }
+            
+            // Check for valid operators and coefficients
+            if (!expr.match(/^[\d\s+\-*\/x()<=>]+$/)) {
+                throw new Error('Invalid characters in expression. Only numbers, variables (x1, x2, etc.), and basic operators are allowed.');
+            }
+            
+            // Check for balanced parentheses
+            let parentheses = 0;
+            for (let char of expr) {
+                if (char === '(') parentheses++;
+                if (char === ')') parentheses--;
+                if (parentheses < 0) throw new Error('Unbalanced parentheses in expression.');
+            }
+            if (parentheses !== 0) throw new Error('Unbalanced parentheses in expression.');
+            
+            // Check for valid variable format
+            if (expr.match(/x\d+/g)) {
+                const vars = expr.match(/x\d+/g);
+                for (let v of vars) {
+                    if (!v.match(/^x\d+$/)) {
+                        throw new Error('Invalid variable format. Use x1, x2, etc.');
+                    }
+                }
+            }
+        }
+
+        // Function to validate objective function
+        function validateObjective(objective) {
+            if (!objective.startsWith('maximize') && !objective.startsWith('minimize')) {
+                throw new Error('Objective must start with "maximize" or "minimize".');
+            }
+            
+            const expr = objective.split('\n')[1].trim();
+            validateExpression(expr);
+        }
+
+        // Function to validate constraints
+        function validateConstraint(constraint) {
+            // Check for valid inequality signs
+            if (!constraint.match(/<=|>=|=/)) {
+                throw new Error('Constraint must contain <=, >=, or = operator.');
+            }
+            
+            const [lhs, rhs] = constraint.split(/<=|>=|=/);
+            validateExpression(lhs.trim());
+            validateExpression(rhs.trim());
+        }
+
+        // Function to validate the entire model
+        function validateModel(model) {
+            const sections = model.split('\n\n');
+            let hasObjective = false;
+            let hasVariables = false;
+            let hasConstraints = false;
+            let hasBounds = false;
+            
+            for (let section of sections) {
+                if (section.startsWith('OBJECTIVE:')) {
+                    hasObjective = true;
+                    validateObjective(section);
+                }
+                else if (section.startsWith('VARIABLES:')) {
+                    hasVariables = true;
+                    const vars = section.split('\n')[1].trim().split(',').map(v => v.trim());
+                    if (!vars.every(v => v.match(/^x\d+$/))) {
+                        throw new Error('Invalid variable format in VARIABLES section. Use x1, x2, etc.');
+                    }
+                }
+                else if (section.startsWith('CONSTRAINTS:')) {
+                    hasConstraints = true;
+                    const constraints = section.split('\n').slice(1);
+                    for (let constraint of constraints) {
+                        if (constraint.trim()) {
+                            validateConstraint(constraint);
+                        }
+                    }
+                }
+                else if (section.startsWith('BOUNDS:')) {
+                    hasBounds = true;
+                    const bounds = section.split('\n').slice(1);
+                    for (let bound of bounds) {
+                        if (bound.trim()) {
+                            validateConstraint(bound);
+                        }
+                    }
+                }
+            }
+            
+            if (!hasObjective) throw new Error('Model must have an OBJECTIVE section.');
+            if (!hasVariables) throw new Error('Model must have a VARIABLES section.');
+            if (!hasConstraints) throw new Error('Model must have a CONSTRAINTS section.');
+            if (!hasBounds) throw new Error('Model must have a BOUNDS section.');
+        }
+
+        // Update the solve button handler to include validation
+        document.getElementById('solveBtn').addEventListener('click', async () => {
+            const problemText = document.getElementById('problemInput').value;
+            
+            try {
+                // Validate the model before sending
+                validateModel(problemText);
+                
+                // Show loading state
+                const solveBtn = document.getElementById('solveBtn');
+                solveBtn.disabled = true;
+                solveBtn.innerHTML = `
+                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                `;
+                
+                // Add problem to chat
+                addMessage('user', problemText);
+                
+                // If this is the first problem and no problems are saved, save it automatically
+                if (savedProblems.length === 0) {
+                    const timestamp = new Date().toLocaleString();
+                    savedProblems.push({
+                        id: Date.now(),
+                        problem: problemText,
+                        solution: null,
+                        timestamp: timestamp
+                    });
+                    localStorage.setItem('savedProblems', JSON.stringify(savedProblems));
+                    updateProblemList();
+                }
+                
+                // Send request to solve
+                const response = await fetch('/solve', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ problem: problemText })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Add solution to chat
+                    addMessage('assistant', formatSolution(result));
+                    
+                    // Update the saved problem with the solution if it's the first one
+                    if (savedProblems.length === 1) {
+                        savedProblems[0].solution = result;
+                        localStorage.setItem('savedProblems', JSON.stringify(savedProblems));
+                        updateProblemList();
+                    }
+                    
+                    // Scroll to the new follow-up input
+                    const chatMessages = document.getElementById('chatMessages');
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                } else {
+                    addMessage('assistant', `<div class="text-red-600">Error: ${result.error}</div>`);
+                }
+            } catch (error) {
+                addMessage('assistant', `<div class="text-red-600">Error: ${error.message}</div>`);
+                console.error(error);
+            } finally {
+                // Reset button state
+                const solveBtn = document.getElementById('solveBtn');
+                solveBtn.disabled = false;
+                solveBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                    </svg>
+                `;
+            }
+        });
+
+        // Auto-resize textarea
+        const textarea = document.getElementById('problemInput');
+        textarea.addEventListener('input', function() {
+            // Reset height to auto to get the correct scrollHeight
+            this.style.height = 'auto';
+            // Set the height to scrollHeight, but don't exceed max-height
+            const newHeight = Math.min(this.scrollHeight, 300);
+            this.style.height = newHeight + 'px';
+        });
+
+        // Also resize on window resize
+        window.addEventListener('resize', function() {
+            textarea.style.height = 'auto';
+            const newHeight = Math.min(textarea.scrollHeight, 300);
+            textarea.style.height = newHeight + 'px';
+        });
+
+        // New chat button handler
+        document.getElementById('newChatBtn').addEventListener('click', () => {
+            const currentProblem = document.getElementById('problemInput').value;
+            if (currentProblem.trim()) {
+                // Save the current problem before starting a new one
+                const timestamp = new Date().toLocaleString();
+                savedProblems.push({
+                    id: Date.now(),
+                    problem: currentProblem,
+                    solution: null,
+                    timestamp: timestamp
+                });
+                localStorage.setItem('savedProblems', JSON.stringify(savedProblems));
+                updateProblemList();
+            }
+            document.getElementById('problemInput').value = '';
+            document.getElementById('chatMessages').innerHTML = '';
+            currentMessageId = 0;
+        });
+
+        // Initialize problem list
+        updateProblemList();
+    </script>
+</body>
+</html> 
