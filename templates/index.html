@@ -31,11 +31,99 @@
             color: #e0e0e0;
         }
         .chat-container {
-            height: calc(100vh - 4rem);
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 8rem);
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            position: relative;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            padding-bottom: 80px;
+        }
+        .input-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #1a1a1a;
+            padding: 1rem;
+        }
+        .input-wrapper {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+        }
+        .problem-input {
+            width: 100%;
+            min-height: 24px;
+            max-height: 400px;
+            padding: 0.75rem 1rem;
+            padding-right: 3rem;
+            background-color: #2d2d2d;
+            border: 1px solid #404040;
+            border-radius: 0.5rem;
+            color: #e0e0e0;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            resize: none;
+            overflow-y: auto;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .problem-input:focus {
+            outline: none;
+            border-color: #4a9eff;
+            box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+        }
+        .send-button {
+            position: absolute;
+            right: 0.5rem;
+            bottom: 0.5rem;
+            background: none;
+            border: none;
+            color: #4a9eff;
+            cursor: pointer;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .send-button:hover {
+            color: #66b3ff;
+        }
+        .send-button:disabled {
+            color: #666;
+            cursor: not-allowed;
+        }
+        .send-button svg {
+            width: 20px;
+            height: 20px;
+            transform: rotate(90deg);
+        }
+        .sidebar {
+            height: calc(100vh - 8rem);
+            display: flex;
+            flex-direction: column;
+            background-color: #2d2d2d;
+            border-radius: 0.5rem;
+            overflow: hidden;
         }
         .problem-list {
-            height: calc(100vh - 8rem);
+            flex: 1;
             overflow-y: auto;
+            padding: 1rem;
         }
         .problem-item {
             position: relative;
@@ -51,81 +139,6 @@
             transition: all 0.3s ease;
             max-width: 800px;
             margin: 0 auto;
-        }
-        .chat-history {
-            height: calc(100vh - 24rem);
-            overflow-y: auto;
-            padding: 1rem;
-        }
-        /* Custom scrollbar for dark mode */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #2d2d2d;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #404040;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #4b5563;
-        }
-        .input-container {
-            background-color: #1a1a1a;
-            border-bottom: 1px solid #404040;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-        .message-content {
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        .user-message {
-            background-color: #2d2d2d;
-            margin-left: 2rem;
-        }
-        .assistant-message {
-            background-color: #1a1a1a;
-            margin-right: 2rem;
-            border: 1px solid #404040;
-        }
-        #problemInput {
-            min-height: 120px;
-            max-height: 300px;
-            transition: height 0.2s ease;
-            padding-right: 3rem;
-        }
-        .input-wrapper {
-            position: relative;
-        }
-        .send-button {
-            position: absolute;
-            bottom: 0.5rem;
-            right: 0.5rem;
-            width: 2.5rem;
-            height: 2.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #3b82f6;
-            color: white;
-            border-radius: 9999px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .send-button:hover {
-            background-color: #2563eb;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .send-button:disabled {
-            background-color: #4b5563;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
         }
         .message-header {
             display: flex;
@@ -175,6 +188,20 @@
             font-size: 0.875rem;
             color: #e0e0e0;
         }
+        /* Custom scrollbar for dark mode */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #404040;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
     </style>
 </head>
 <body class="bg-dark-bg text-dark-text">
@@ -183,53 +210,39 @@
         
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <!-- Main Content -->
-            <div class="md:col-span-3 space-y-4">
+            <div class="md:col-span-3">
                 <!-- Main Chat Area -->
-                <div class="chat-container relative">
-                    <!-- Input Area -->
+                <div class="chat-container rounded-lg shadow">
+                    <div class="chat-history" id="chatHistory"></div>
                     <div class="input-container">
-                        <div class="max-w-3xl mx-auto">
-                            <div class="input-wrapper">
-                                <textarea id="problemInput" 
-                                    class="w-full p-4 bg-dark-card border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-primary text-dark-text resize-none"
-                                    rows="6"
-                                    placeholder="Enter your MILP problem or describe a constraint...">OBJECTIVE: maximize
-3*x1 + 2*x2 + 4*x3
-
-VARIABLES:
-x1, x2, x3
-
-CONSTRAINTS:
-2*x1 + 1*x2 + 3*x3 <= 10
-1*x1 + 2*x2 + 1*x3 <= 8
-3*x1 + 2*x2 + 2*x3 <= 12
-
-BOUNDS:
-x1 >= 0
-x2 >= 0
-x3 >= 0</textarea>
-                                <button id="solveBtn" class="send-button" title="Solve Problem">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
-                                    </svg>
-                                </button>
-                            </div>
+                        <div class="input-wrapper">
+                            <textarea 
+                                id="problemInput" 
+                                class="problem-input" 
+                                placeholder="Enter your MILP problem here..."
+                                rows="1"
+                                onInput="autoResize(this)"
+                            ></textarea>
+                            <button class="send-button" onclick="solveProblem()" id="solveButton">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                                </svg>
+                            </button>
                         </div>
                     </div>
-                    
-                    <!-- Chat History -->
-                    <div id="chatMessages" class="chat-history space-y-4"></div>
                 </div>
             </div>
 
             <!-- Sidebar -->
-            <div class="bg-dark-card p-4 rounded-lg shadow">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-semibold">Saved Problems</h2>
-                    <button id="newChatBtn" 
-                        class="px-4 py-2 bg-dark-secondary text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-dark-secondary text-sm">
-                        New Problem
-                    </button>
+            <div class="sidebar">
+                <div class="p-4 border-b border-dark-border">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-semibold">Saved Problems</h2>
+                        <button id="newChatBtn" 
+                            class="px-4 py-2 bg-dark-secondary text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-dark-secondary text-sm">
+                            New Problem
+                        </button>
+                    </div>
                 </div>
                 <div id="problemList" class="problem-list space-y-2"></div>
             </div>
@@ -299,47 +312,42 @@ x3 >= 0</textarea>
         function loadProblem(index) {
             const problem = savedProblems[index];
             document.getElementById('problemInput').value = problem.problem;
-            document.getElementById('chatMessages').innerHTML = '';
+            document.getElementById('chatHistory').innerHTML = '';
             currentMessageId = 0;
             // Automatically solve the loaded problem
-            document.getElementById('solveBtn').click();
+            document.getElementById('solveButton').click();
         }
 
         // Function to add a message to the chat
-        function addMessage(role, content, messageId = null) {
-            const chatMessages = document.getElementById('chatMessages');
+        function addMessage(text, type) {
+            const chatHistory = document.getElementById('chatHistory');
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${role === 'user' ? 'user-message' : 'assistant-message'}`;
+            messageDiv.className = `message ${type}-message`;
             
-            if (messageId === null) {
-                messageId = currentMessageId++;
-            }
-            messageDiv.dataset.messageId = messageId;
-            
-            if (role === 'user') {
+            if (type === 'solution') {
+                messageDiv.innerHTML = formatSolution(text);
+            } else if (type === 'follow-up') {
                 messageDiv.innerHTML = `
-                    <div class="message-header">
-                        <div class="message-avatar user-avatar">U</div>
-                        <div class="message-text">Problem</div>
-                    </div>
                     <div class="message-content">
-                        <pre class="whitespace-pre-wrap text-dark-text">${content}</pre>
+                        <div class="message-text">${text}</div>
+                        <div class="follow-up-section">
+                            <textarea class="follow-up-input" placeholder="Add a new constraint..." rows="1" onInput="autoResize(this)"></textarea>
+                            <button onclick="handleFollowUp(this)" class="follow-up-button">Add Constraint</button>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'problem') {
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <pre class="whitespace-pre-wrap">${text}</pre>
                     </div>
                 `;
             } else {
-                messageDiv.innerHTML = `
-                    <div class="message-header">
-                        <div class="message-avatar assistant-avatar">A</div>
-                        <div class="message-text">Solution</div>
-                    </div>
-                    <div class="message-content">
-                        ${content}
-                    </div>
-                `;
+                messageDiv.innerHTML = `<div class="message-content">${text}</div>`;
             }
             
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            chatHistory.appendChild(messageDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
         // Function to determine where to add the new constraint
@@ -456,42 +464,51 @@ x3 >= 0</textarea>
         // Function to handle follow-up input
         function handleFollowUp(button) {
             const followUpInput = button.parentElement.querySelector('.follow-up-input');
-            const userInput = followUpInput.value.trim();
+            const text = followUpInput.value.trim();
             
-            if (!userInput) return;
+            if (!text) {
+                showError('Please enter a constraint');
+                return;
+            }
+
+            // Add user's follow-up to chat
+            addMessage(text, 'follow-up');
             
-            // Add the original user input to the chat as a user message
-            addMessage('user', userInput);
+            // Clear input and reset height
+            followUpInput.value = '';
+            followUpInput.style.height = 'auto';
             
-            // Interpret the constraint
-            const interpretedConstraint = interpretConstraint(userInput);
+            // Remove the follow-up section
+            button.parentElement.remove();
             
-            // Get the current problem text
-            const currentProblem = document.getElementById('problemInput').value;
+            // Interpret and add the constraint
+            const interpretedConstraint = interpretConstraint(text);
+            const currentModel = getCurrentModel();
+            const updatedModel = addConstraintToModel(currentModel, interpretedConstraint);
             
-            // Add the interpreted constraint to the appropriate section
-            const newProblem = addConstraintToModel(currentProblem, interpretedConstraint);
-            
-            // Add an explanation message
-            addMessage('assistant', `
-                <div class="space-y-2">
-                    <div class="font-medium text-dark-text">I've interpreted your input as:</div>
-                    <div class="p-2 bg-dark-hover rounded-lg">
-                        <pre class="whitespace-pre-wrap text-dark-text">${interpretedConstraint}</pre>
-                    </div>
-                    <div class="font-medium text-dark-text mt-4">Solving the updated model...</div>
-                </div>
-            `);
-            
-            // Update the main input
-            document.getElementById('problemInput').value = newProblem;
-            
-            // Disable the follow-up input and button
-            followUpInput.disabled = true;
-            button.disabled = true;
+            // Show the interpreted constraint
+            addMessage(`Adding constraint: ${interpretedConstraint}`, 'system');
             
             // Solve the updated problem
-            document.getElementById('solveBtn').click();
+            fetch('/solve', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ problem: updatedModel })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    addMessage(data.solution, 'solution');
+                }
+            })
+            .catch(error => {
+                showError('An error occurred while solving the problem');
+                console.error('Error:', error);
+            });
         }
 
         // Function to format solution for display
@@ -579,11 +596,23 @@ x3 >= 0</textarea>
 
         // Function to validate objective function
         function validateObjective(objective) {
-            if (!objective.startsWith('maximize') && !objective.startsWith('minimize')) {
-                throw new Error('Objective must start with "maximize" or "minimize".');
+            // Split into lines and get the objective line
+            const lines = objective.split('\n');
+            const objectiveLine = lines[0].trim();
+            
+            // Check if it starts with "OBJECTIVE:"
+            if (!objectiveLine.startsWith('OBJECTIVE:')) {
+                throw new Error('Objective section must start with "OBJECTIVE:".');
             }
             
-            const expr = objective.split('\n')[1].trim();
+            // Get the objective type (maximize/minimize)
+            const objectiveType = objectiveLine.substring('OBJECTIVE:'.length).trim();
+            if (objectiveType !== 'maximize' && objectiveType !== 'minimize') {
+                throw new Error('Objective must be either "maximize" or "minimize".');
+            }
+            
+            // Get the expression from the next line
+            const expr = lines[1].trim();
             validateExpression(expr);
         }
 
@@ -645,98 +674,141 @@ x3 >= 0</textarea>
             if (!hasBounds) throw new Error('Model must have a BOUNDS section.');
         }
 
+        // Function to show error messages
+        function showError(message) {
+            const chatHistory = document.getElementById('chatHistory');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'message error-message';
+            errorDiv.innerHTML = `
+                <div class="message-content bg-red-900/20 border border-red-500/50 text-red-200">
+                    <div class="message-text">${message}</div>
+                </div>
+            `;
+            chatHistory.appendChild(errorDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        // Function to get the current model from the chat history
+        function getCurrentModel() {
+            const messages = document.querySelectorAll('.message');
+            for (let i = messages.length - 1; i >= 0; i--) {
+                const message = messages[i];
+                if (message.querySelector('.message-content pre')) {
+                    return message.querySelector('.message-content pre').textContent;
+                }
+            }
+            return '';
+        }
+
         // Update the solve button handler to include validation
-        document.getElementById('solveBtn').addEventListener('click', async () => {
-            const problemText = document.getElementById('problemInput').value;
+        function solveProblem() {
+            const problemInput = document.getElementById('problemInput');
+            const problem = problemInput.value.trim();
             
+            if (!problem) {
+                showError('Please enter a problem');
+                return;
+            }
+
             try {
                 // Validate the model before sending
-                validateModel(problemText);
+                validateModel(problem);
+                
+                // Add problem to chat
+                addMessage(problem, 'problem');
+                
+                // Clear input and reset height
+                problemInput.value = '';
+                problemInput.style.height = 'auto';
                 
                 // Show loading state
-                const solveBtn = document.getElementById('solveBtn');
-                solveBtn.disabled = true;
-                solveBtn.innerHTML = `
-                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                const solveButton = document.getElementById('solveButton');
+                solveButton.disabled = true;
+                solveButton.innerHTML = `
+                    <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                 `;
                 
-                // Add problem to chat
-                addMessage('user', problemText);
-                
-                // If this is the first problem and no problems are saved, save it automatically
-                if (savedProblems.length === 0) {
-                    const timestamp = new Date().toLocaleString();
-                    savedProblems.push({
-                        id: Date.now(),
-                        problem: problemText,
-                        solution: null,
-                        timestamp: timestamp
-                    });
-                    localStorage.setItem('savedProblems', JSON.stringify(savedProblems));
-                    updateProblemList();
-                }
-                
-                // Send request to solve
-                const response = await fetch('/solve', {
+                // Solve problem
+                fetch('/solve', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ problem: problemText })
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    // Add solution to chat
-                    addMessage('assistant', formatSolution(result));
-                    
-                    // Update the saved problem with the solution if it's the first one
-                    if (savedProblems.length === 1) {
-                        savedProblems[0].solution = result;
-                        localStorage.setItem('savedProblems', JSON.stringify(savedProblems));
-                        updateProblemList();
+                    body: JSON.stringify({ problem: problem })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
                     }
-                    
-                    // Scroll to the new follow-up input
-                    const chatMessages = document.getElementById('chatMessages');
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                } else {
-                    addMessage('assistant', `<div class="text-red-600">Error: ${result.error}</div>`);
-                }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        showError(data.error);
+                    } else {
+                        // Add the solution to chat
+                        addMessage(data, 'solution');
+                        
+                        // Save the problem if it's the first one
+                        if (savedProblems.length === 0) {
+                            saveProblem(problem, data);
+                        }
+                    }
+                })
+                .catch(error => {
+                    showError('An error occurred while solving the problem: ' + error.message);
+                    console.error('Error:', error);
+                })
+                .finally(() => {
+                    // Reset button state
+                    solveButton.disabled = false;
+                    solveButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                    `;
+                });
             } catch (error) {
-                addMessage('assistant', `<div class="text-red-600">Error: ${error.message}</div>`);
-                console.error(error);
-            } finally {
-                // Reset button state
-                const solveBtn = document.getElementById('solveBtn');
-                solveBtn.disabled = false;
-                solveBtn.innerHTML = `
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
-                    </svg>
-                `;
+                showError(error.message);
             }
-        });
+        }
 
-        // Auto-resize textarea
-        const textarea = document.getElementById('problemInput');
-        textarea.addEventListener('input', function() {
+        // Update the auto-resize function
+        function autoResize(textarea) {
             // Reset height to auto to get the correct scrollHeight
-            this.style.height = 'auto';
-            // Set the height to scrollHeight, but don't exceed max-height
-            const newHeight = Math.min(this.scrollHeight, 300);
-            this.style.height = newHeight + 'px';
-        });
-
-        // Also resize on window resize
-        window.addEventListener('resize', function() {
             textarea.style.height = 'auto';
-            const newHeight = Math.min(textarea.scrollHeight, 300);
-            textarea.style.height = newHeight + 'px';
+            
+            // Set the height to scrollHeight
+            textarea.style.height = textarea.scrollHeight + 'px';
+            
+            // If content exceeds max height, show scrollbar
+            if (textarea.scrollHeight > textarea.maxHeight) {
+                textarea.style.height = textarea.maxHeight + 'px';
+                textarea.style.overflowY = 'auto';
+            } else {
+                textarea.style.overflowY = 'hidden';
+            }
+        }
+
+        // Add event listeners for textarea
+        document.addEventListener('DOMContentLoaded', function() {
+            const textarea = document.getElementById('problemInput');
+            
+            // Resize on input
+            textarea.addEventListener('input', function() {
+                autoResize(this);
+            });
+            
+            // Resize on window resize
+            window.addEventListener('resize', function() {
+                autoResize(textarea);
+            });
+            
+            // Initial resize
+            autoResize(textarea);
         });
 
         // New chat button handler
@@ -754,8 +826,7 @@ x3 >= 0</textarea>
                 localStorage.setItem('savedProblems', JSON.stringify(savedProblems));
                 updateProblemList();
             }
-            document.getElementById('problemInput').value = '';
-            document.getElementById('chatMessages').innerHTML = '';
+            document.getElementById('chatHistory').innerHTML = '';
             currentMessageId = 0;
         });
 

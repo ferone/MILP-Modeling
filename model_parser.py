@@ -15,12 +15,7 @@ class ModelParser:
         with open(file_path, 'r') as file:
             content = file.read()
 
-        # Parse objective
-        objective_match = re.search(r'OBJECTIVE:\s*(maximize|minimize)', content)
-        if objective_match:
-            self.objective_type = LpMaximize if objective_match.group(1) == 'maximize' else LpMinimize
-
-        # Parse variables
+        # Parse variables first
         variables_section = re.search(r'VARIABLES:\s*(.*?)(?=\n\n|\Z)', content, re.DOTALL)
         if variables_section:
             var_names = [v.strip() for v in variables_section.group(1).split(',')]
@@ -28,21 +23,26 @@ class ModelParser:
                 if var_name:  # Skip empty strings
                     self.variables[var_name] = LpVariable(var_name, lowBound=0)
 
+        # Parse objective
+        objective_match = re.search(r'OBJECTIVE:\s*(maximize|minimize)\s*(.*?)(?=\n\n|\Z)', content, re.DOTALL)
+        if objective_match:
+            self.objective_type = LpMaximize if objective_match.group(1) == 'maximize' else LpMinimize
+            # Parse the objective function expression
+            objective_expr = objective_match.group(2).strip()
+            self._parse_objective(objective_expr)
+
         # Create PuLP problem
         problem = LpProblem("MILP_Problem", self.objective_type)
+        
+        # Set the objective function
+        if self.objective:
+            problem += self.objective
 
         # Parse constraints
         constraints_section = re.search(r'CONSTRAINTS:\s*(.*?)(?=\n\n|\Z)', content, re.DOTALL)
         if constraints_section:
             constraints = [line.strip() for line in constraints_section.group(1).split('\n') if line.strip()]
-            
-            # First line is the objective function
-            if constraints:
-                self._parse_objective(constraints[0])
-                problem += self.objective
-            
-            # Parse remaining constraints
-            for constraint in constraints[1:]:
+            for constraint in constraints:
                 constraint_expr = self._parse_expression(constraint)
                 if constraint_expr:
                     problem += constraint_expr
